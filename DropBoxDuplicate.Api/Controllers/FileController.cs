@@ -35,12 +35,6 @@ namespace DropBoxDuplicate.Api.Controllers
         [Route("{id:guid}")]
         public IHttpActionResult GetFileInfo(Guid id)
         {
-            if (id == Guid.Empty)
-            {
-                ModelState.AddModelError("fileId", "Не может быть empty.");
-                return BadRequest(ModelState);
-            }
-
             return Ok(_fileRepository.GetInfo(id));
         }
 
@@ -49,14 +43,7 @@ namespace DropBoxDuplicate.Api.Controllers
         [Route("{id:guid}")]
         public IHttpActionResult DeleteFile(Guid id)
         {
-            if (id == Guid.Empty)
-            {
-                ModelState.AddModelError("id", "Не может быть empty.");
-                return BadRequest(ModelState);
-            }
-
             _fileRepository.Delete(id);
-
             return new StatusCodeResult(HttpStatusCode.Accepted, this);
         }
 
@@ -65,15 +52,7 @@ namespace DropBoxDuplicate.Api.Controllers
         [Route("{id:guid}/content")]
         public IHttpActionResult GetContent(Guid id)
         {
-            if (id == Guid.Empty)
-            {
-                ModelState.AddModelError("id", "Не может быть empty.");
-                return BadRequest(ModelState);
-            }
-
-            var content = _fileRepository.GetContent(id);
-
-            return Ok(content);
+            return Ok(_fileRepository.GetContent(id));
         }
 
         [Authorize]
@@ -81,14 +60,7 @@ namespace DropBoxDuplicate.Api.Controllers
         [Route("{id:guid}/update")]
         public async Task<IHttpActionResult> UpdateFileContent(Guid id)
         {
-            if (id == Guid.Empty)
-            {
-                ModelState.AddModelError("id", "Не может быть empty.");
-                return BadRequest(ModelState);
-            }
-
             var bytes = await Request.Content.ReadAsByteArrayAsync();
-
             _fileRepository.UpdateContent(id, bytes);
 
             return Ok();
@@ -133,18 +105,17 @@ namespace DropBoxDuplicate.Api.Controllers
             }
 
             _fileRepository.AddfileToShareForUser(id, userId);
-
             return Ok();
         }
 
         [Authorize]
         [HttpDelete]
         [Route("{id:guid}/share/")]
-        public IHttpActionResult DeleteUsersFromShare(Guid id, Guid[] userId)
+        public async Task<IHttpActionResult> DeleteUsersFromShare(Guid id, Guid[] userId)
         {
             foreach (var idUser in userId)
             {
-                if (_userRepository.FindByIdAsync(idUser) == null)
+                if (await _userRepository.FindByIdAsync(idUser) == null)
                 {
                     ModelState.AddModelError("user", $"Пользователь c {idUser} не зарегистрирован.");
                     return BadRequest(ModelState);
@@ -152,7 +123,7 @@ namespace DropBoxDuplicate.Api.Controllers
 
                 if (!_fileRepository.IsFileShare(idUser, id))
                 {
-                    ModelState.AddModelError("user", $"Для пользователя c {idUser} файл не расшарен.");
+                    ModelState.AddModelError("user", $"Для пользователя c {idUser} файл {id} не расшарен.");
                     return BadRequest(ModelState);
                 }
             }
@@ -162,29 +133,30 @@ namespace DropBoxDuplicate.Api.Controllers
             return new StatusCodeResult(HttpStatusCode.Accepted, this);
         }
 
-        [Authorize]
+        //[Authorize]
         [HttpPut]
-        [Route("{id:guid}/share/user/{userId:guid}")]
-        public IHttpActionResult UpdateAccessToFile(Guid id, Guid userId, AccessType type)
+        [Route("{id:guid}/share/")]
+        public async Task<IHttpActionResult> UpdateAccessToFile(Guid id, Share share)
         {
-            var user = _userRepository.FindByIdAsync(userId);
+            var user = await _userRepository.FindByIdAsync(share.UserId);
 
             if (user == null)
             {
-                ModelState.AddModelError("user", $"Пользователь c {userId} не зарегистрирован.");
-                return BadRequest();
+                ModelState.AddModelError("user", $"Пользователь c {share.UserId} не зарегистрирован.");
+                return BadRequest(ModelState);
             }
 
-            var share = _fileRepository.IsFileShare(userId, id);
+            var shareFile = _fileRepository.IsFileShare(share.UserId, id);
 
-            if (share)
+            if (shareFile)
             {
-                _fileRepository.UpdateAccessToFile(id, userId, type);
+                share.FileId = id;
+                 _fileRepository.UpdateAccessToFile(share);
                 return Ok();
             }
 
-            ModelState.AddModelError("user", $"Для пользователя c {userId} файл {id} не расшарен.");
-            return BadRequest();
+            ModelState.AddModelError("user", $"Для пользователя c {share.UserId} файл {id} не расшарен.");
+            return BadRequest(ModelState);
         }
     }
 }

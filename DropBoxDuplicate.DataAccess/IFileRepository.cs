@@ -85,9 +85,7 @@ namespace DropBoxDuplicate.DataAccess
         /// <summary>
         /// Изменить уровень доступа к файлу
         /// </summary>
-        /// <param name="fileId">Id файла</param>
-        /// <param name="userId">Id пользователя</param>
-        /// <param name="type">Уровень доступа: owner, read, write</param>
-        void UpdateAccessToFile(Guid fileId, Guid userId, AccessType type);
+        /// <param name="share">Параметры для расшаривания файла</param>
+        void UpdateAccessToFile(Share share);
     }
 }

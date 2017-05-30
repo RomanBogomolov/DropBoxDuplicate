@@ -373,21 +373,21 @@ namespace DropBoxDuplicate.DataAccess.Sql
             }
         }
 
-        public void UpdateAccessToFile(Guid fileId, Guid userId, AccessType type)
+        public void UpdateAccessToFile(Share share)
         {
-            if (fileId == Guid.Empty)
+            if (share.FileId == Guid.Empty)
             {
-                throw new ArgumentNullException(nameof(fileId), "fileid не может быть empty.");
+                throw new ArgumentNullException(nameof(share.FileId), "fileid не может быть empty.");
             }
 
-            if (userId == Guid.Empty)
+            if (share.UserId == Guid.Empty)
             {
-                throw new ArgumentNullException(nameof(userId), "userId не может быть empty.");
+                throw new ArgumentNullException(nameof(share.UserId), "userId не может быть empty.");
             }
 
-            if (Enum.IsDefined(typeof(AccessType), type))
+            if (!Enum.IsDefined(typeof(AccessType), share.AccessAtribute))
             {
-                throw new ArgumentNullException(nameof(type), "Не указан уровень доступа.");
+                throw new ArgumentNullException(nameof(share.AccessAtribute), "Не указан уровень доступа.");
             }
 
             using (var connection = new SqlConnection(_connectionString))
@@ -398,9 +398,9 @@ namespace DropBoxDuplicate.DataAccess.Sql
                 {
                     command.CommandType = CommandType.StoredProcedure;
 
-                    command.Parameters.AddWithValue("@fileId", fileId);
-                    command.Parameters.AddWithValue("@userId", userId);
-                    command.Parameters.AddWithValue("@access", type);
+                    command.Parameters.AddWithValue("@fileId", share.FileId);
+                    command.Parameters.AddWithValue("@userId", share.UserId);
+                    command.Parameters.AddWithValue("@access", (byte) share.AccessAtribute);
 
                     command.ExecuteNonQuery();
                 }
