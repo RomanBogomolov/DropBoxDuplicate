@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Runtime.InteropServices;
 using DropBoxDuplicate.DataAccess.Sql.Extends;
 using DropBoxDuplicate.Model;
 using Microsoft.AspNet.Identity;
@@ -399,6 +400,146 @@ namespace DropBoxDuplicate.DataAccess.Sql
                     command.Parameters.AddWithValue("@fileId", share.FileId);
                     command.Parameters.AddWithValue("@userId", share.UserId);
                     command.Parameters.AddWithValue("@access", (byte) share.AccessAtribute);
+
+                    command.ExecuteNonQuery();
+                }
+            }
+        }
+
+        public Comment GetCommentInfo(Guid id)
+        {
+            if (id == Guid.Empty)
+            {
+                throw new ArgumentNullException(nameof(id), "id не может быть empty");
+            }
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                connection.Open();
+                using (var command = connection.CreateCommand())
+                {
+                    command.CommandText = "SELECT " +
+                                          "Id, " +
+                                          "userId, " +
+                                          "fileId, " +
+                                          "Text, " +
+                                          "PostDate FROM ufSelect_comment_by_id(@id)";
+
+                    command.Parameters.AddWithValue("@id", id);
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            var commentIfo = new Comment
+                            {
+                                Id = reader.GetGuid(reader.GetOrdinal("id")),
+                                Text = reader.GetString(reader.GetOrdinal("text")),
+                                PostDate = reader.GetDateTimeOffset(reader.GetOrdinal("PostDate")),
+                                User = _usersRepository.FindByIdAsync(reader.GetGuid(reader.GetOrdinal("userId")))
+                                    .Result,
+                                File = GetInfo(reader.GetGuid(reader.GetOrdinal("fileId")))
+                            };
+
+                            return commentIfo;
+                        }
+
+                        throw new ArgumentException($"Комментарий: {id} недоступен.");
+                    }
+                }
+
+            }
+        }
+
+        public Comment AddCommentToFile(Comment comment)
+        {
+            if (comment == null)
+            {
+                throw new ArgumentNullException(nameof(comment), "Комментарий не может быть null.");
+            }
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                using (var command = new SqlCommand("upCreate_new_comment", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+
+                    var commentId = Guid.NewGuid();
+                    var createdDate = DateTimeOffset.Now;
+
+                    command.Parameters.AddWithValue("@id", commentId);
+                    command.Parameters.AddWithValue("@userId", comment.User.Id);
+                    command.Parameters.AddWithValue("@fileId", comment.File.Id);
+                    command.Parameters.AddWithValue("@text", comment.Text);
+                    command.Parameters.AddWithValue("@postDate", createdDate);
+
+                    command.ExecuteNonQuery();
+
+                    comment.Id = commentId;
+                    comment.PostDate = createdDate;
+
+                    return comment;
+                }
+            }
+        }
+
+        public IEnumerable<Comment> GetFileComments(Guid fileId)
+        {
+            if (fileId == Guid.Empty)
+            {
+                throw new ArgumentNullException(nameof(fileId), "Id не может быть empty.");
+            }
+
+            var comments = new List<Comment>();
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                connection.Open();
+                using (var command = connection.CreateCommand())
+                {
+                    command.CommandText = "SELECT " +
+                                          "Id, " +
+                                          "userId, " +
+                                          "fileId, " +
+                                          "Text, " +
+                                          "PostDate " +
+                                          "FROM ufSelect_comments_by_fileId(@fileId)";
+
+                    command.Parameters.AddWithValue("@fileId", fileId);
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            comments.Add(GetCommentInfo(reader.GetGuid(reader.GetOrdinal("Id"))));
+                        }
+
+                        return comments;
+                    }
+                }
+            }
+        }
+
+        public void DeleteComment(Comment comment)
+        {
+            if (comment == null)
+            {
+                throw new ArgumentNullException(nameof(comment), "Comment не может быть null.");
+            }
+
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                using (var command = new SqlCommand("upDelete_UserFile", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+
+                    command.Parameters.AddWithValue("@id", comment.Id);
+                    command.Parameters.AddWithValue("@userId", comment.User.Id);
+                    command.Parameters.AddWithValue("@fileId", comment.File.Id);
 
                     command.ExecuteNonQuery();
                 }

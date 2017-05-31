@@ -87,5 +87,31 @@ namespace DropBoxDuplicate.DataAccess
         /// </summary>
         /// <param name="share">Параметры для расшаривания файла</param>
         void UpdateAccessToFile(Share share);
+
+        /// <summary>
+        /// Получить информацию о комментарии
+        /// </summary>
+        /// <param name="id">Идентификатор комментария</param>
+        /// <returns></returns>
+        Comment GetCommentInfo(Guid id);
+
+        /// <summary>
+        /// Добавить комментарий к файлу
+        /// </summary>
+        /// <param name="comment"><see cref="Comment"/></param>
+        Comment AddCommentToFile(Comment comment);
+
+        /// <summary>
+        /// Получить все комментарии для файла
+        /// </summary>
+        /// <param name="fileId">Идентификатор файла</param>
+        /// <returns></returns>
+        IEnumerable<Comment> GetFileComments(Guid fileId);
+
+        /// <summary>
+        /// Удалить комментарий
+        /// </summary>
+        /// <param name="comment"><see cref="Comment"/></param>
+        void DeleteComment(Comment comment);
     }
 }
