@@ -302,7 +302,7 @@ namespace DropBoxDuplicate.Api.Controllers
         /// <param name="share">Информация о шаре</param>
         /// <response code="404">Неверный запрос</response>
         [SwaggerResponse(200, "Уровень доступа успешно обновлен.")]
-        //[Authorize]
+        [Authorize]
         [HttpPut]
         [Route("{id:guid}/share/")]
         public async Task<IHttpActionResult> UpdateAccessToFile(Guid id, Share share)
@@ -328,7 +328,24 @@ namespace DropBoxDuplicate.Api.Controllers
             return BadRequest(ModelState);
         }
 
-
+        /// <summary>
+        /// Добавить комментарий к файлу
+        /// </summary>
+        /// <remarks>
+        /// Запрос
+        ///  
+        ///     POST api/file/BC345A1F-E173-47A7-9EE6-23B7BD7F71A9/comment/user/E6ECA3DC-5338-46D4-86D3-46AC9C60ACB9/
+        ///     {
+        ///         "text":"text text text"         
+        ///     }
+        /// 
+        /// </remarks>
+        /// <param name="fileId">Идентификатор файла</param>
+        /// <param name="userId">Идентификатор пользователя</param>
+        /// <param name="comment">Текст сообщения</param>
+        /// <response code="404">Неверный запрос</response>
+        [SwaggerResponse(200, "Комментарий успешно добавлен.")]
+        [Authorize]
         [HttpPost]
         [Route("{fileId:guid}/comment/user/{userId:guid}/")]
         public IHttpActionResult AddCommentToFile(Guid fileId, Guid userId, Comment comment)
@@ -345,6 +362,19 @@ namespace DropBoxDuplicate.Api.Controllers
             return BadRequest(ModelState);
         }
 
+        /// <summary>
+        /// Получить список комментариев к файлу
+        /// </summary>
+        /// <remarks>
+        /// Запрос
+        ///  
+        ///     GET api/file/BC345A1F-E173-47A7-9EE6-23B7BD7F71A9/comment
+        /// 
+        /// </remarks>
+        /// <param name="fileId">Идентификатор файла</param>
+        /// <response code="404">Неверный запрос</response>
+        [SwaggerResponse(200, "Список комментариев")]
+        [Authorize]
         [HttpGet]
         [Route("{fileId:guid}/comment")]
         public IHttpActionResult GetFilecomments(Guid fileId)
@@ -368,6 +398,21 @@ namespace DropBoxDuplicate.Api.Controllers
             return Ok(comments);
         }
 
+        /// <summary>
+        /// Удалить комментарий пользователя
+        /// </summary>
+        /// <remarks>
+        /// Запрос
+        ///  
+        ///     DELETE api/file/BC345A1F-E173-47A7-9EE6-23B7BD7F71A9/comment/user/E6ECA3DC-5338-46D4-86D3-46AC9C60ACB9/
+        /// 
+        /// </remarks>
+        /// <param name="fileId">Идентификатор файла</param>
+        /// <param name="userId">Идентификатор пользователя</param>
+        /// <param name="comment">Идентификатор комментария</param>
+        /// <response code="404">Неверный запрос</response>
+        [SwaggerResponse(203, "Комментарий удален.")]
+        [Authorize]
         [HttpDelete]
         [Route("{fileId:guid}/comment/user/{userId:guid}/")]
         public IHttpActionResult DeleteCommentFromFile(Guid fileId, Guid userId, Comment comment)
