@@ -98,8 +98,10 @@ namespace DropBoxDuplicate.DataAccess
         /// <summary>
         /// Добавить комментарий к файлу
         /// </summary>
+        /// <param name="userId">Id пользователя</param>
         /// <param name="comment"><see cref="Comment"/></param>
-        Comment AddCommentToFile(Comment comment);
+        /// <param name="fileId">Id файла</param>
+        Comment AddCommentToFile(Guid fileId, Guid userId, Comment comment);
 
         /// <summary>
         /// Получить все комментарии для файла
@@ -111,7 +113,9 @@ namespace DropBoxDuplicate.DataAccess
         /// <summary>
         /// Удалить комментарий
         /// </summary>
+        /// <param name="userId">Id пользователя</param>
         /// <param name="comment"><see cref="Comment"/></param>
-        void DeleteComment(Comment comment);
+        /// <param name="fileId">Id файла</param>
+        void DeleteComment(Guid fileId, Guid userId, Comment comment);
     }
 }

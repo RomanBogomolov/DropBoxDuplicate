@@ -327,5 +327,53 @@ namespace DropBoxDuplicate.Api.Controllers
             ModelState.AddModelError("user", $"Для пользователя c {share.UserId} файл {id} не расшарен.");
             return BadRequest(ModelState);
         }
+
+
+        [HttpPost]
+        [Route("{fileId:guid}/comment/user/{userId:guid}/")]
+        public IHttpActionResult AddCommentToFile(Guid fileId, Guid userId, Comment comment)
+        {
+            var checkShareFile = _fileRepository.IsFileShare(userId, fileId);
+
+            if (checkShareFile)
+            {
+                _fileRepository.AddCommentToFile(fileId, userId, comment);
+                return Ok();
+            }
+
+            ModelState.AddModelError("file", $"Файл {fileId} для пользоваеля {userId} не расшарен.");
+            return BadRequest(ModelState);
+        }
+
+        [HttpGet]
+        [Route("{fileId:guid}/comment")]
+        public IHttpActionResult GetFilecomments(Guid fileId)
+        {
+            var checkFile = _fileRepository.GetInfo(fileId);
+
+            if (checkFile == null)
+            {
+                ModelState.AddModelError("file", "Файл не найден.");
+                return BadRequest();
+            }
+
+            var comments = _fileRepository.GetFileComments(fileId);
+
+            if (comments == null)
+            {
+                ModelState.AddModelError("file", "Комментариев не найдено.");
+                return BadRequest();
+            }
+
+            return Ok(comments);
+        }
+
+        [HttpDelete]
+        [Route("{fileId:guid}/comment/user/{userId:guid}/")]
+        public IHttpActionResult DeleteCommentFromFile(Guid fileId, Guid userId, Comment comment)
+        {
+            _fileRepository.DeleteComment(fileId, userId, comment);
+            return new StatusCodeResult(HttpStatusCode.Accepted, this);
+        }
     }
 }

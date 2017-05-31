@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
-using System.Runtime.InteropServices;
 using DropBoxDuplicate.DataAccess.Sql.Extends;
 using DropBoxDuplicate.Model;
 using Microsoft.AspNet.Identity;
@@ -451,11 +450,19 @@ namespace DropBoxDuplicate.DataAccess.Sql
             }
         }
 
-        public Comment AddCommentToFile(Comment comment)
+        public Comment AddCommentToFile(Guid fileId, Guid userId, Comment comment)
         {
             if (comment == null)
             {
                 throw new ArgumentNullException(nameof(comment), "Комментарий не может быть null.");
+            }
+            if (fileId == Guid.Empty)
+            {
+                throw new ArgumentNullException(nameof(fileId), "fileId не может быть empty.");
+            }
+            if (userId == Guid.Empty)
+            {
+                throw new ArgumentNullException(nameof(userId), "userId не может быть empty.");
             }
 
             using (var connection = new SqlConnection(_connectionString))
@@ -470,8 +477,8 @@ namespace DropBoxDuplicate.DataAccess.Sql
                     var createdDate = DateTimeOffset.Now;
 
                     command.Parameters.AddWithValue("@id", commentId);
-                    command.Parameters.AddWithValue("@userId", comment.User.Id);
-                    command.Parameters.AddWithValue("@fileId", comment.File.Id);
+                    command.Parameters.AddWithValue("@userId", userId);
+                    command.Parameters.AddWithValue("@fileId", fileId);
                     command.Parameters.AddWithValue("@text", comment.Text);
                     command.Parameters.AddWithValue("@postDate", createdDate);
 
@@ -522,7 +529,7 @@ namespace DropBoxDuplicate.DataAccess.Sql
             }
         }
 
-        public void DeleteComment(Comment comment)
+        public void DeleteComment(Guid fileId, Guid userId, Comment comment)
         {
             if (comment == null)
             {
@@ -533,13 +540,13 @@ namespace DropBoxDuplicate.DataAccess.Sql
             {
                 connection.Open();
 
-                using (var command = new SqlCommand("upDelete_UserFile", connection))
+                using (var command = new SqlCommand("upDelete_comment", connection))
                 {
                     command.CommandType = CommandType.StoredProcedure;
 
                     command.Parameters.AddWithValue("@id", comment.Id);
-                    command.Parameters.AddWithValue("@userId", comment.User.Id);
-                    command.Parameters.AddWithValue("@fileId", comment.File.Id);
+                    command.Parameters.AddWithValue("@userId", userId);
+                    command.Parameters.AddWithValue("@fileId", fileId);
 
                     command.ExecuteNonQuery();
                 }

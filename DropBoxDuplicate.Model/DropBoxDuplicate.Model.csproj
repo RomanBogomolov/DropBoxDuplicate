@@ -46,10 +46,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Comment.cs" />
     <Compile Include="Files.cs" />
     <Compile Include="IdentityUser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Share.cs" />
+    <Compile Include="Validators\CommentValidator.cs" />
     <Compile Include="Validators\IdentityUserValidator.cs" />
   </ItemGroup>
   <ItemGroup>

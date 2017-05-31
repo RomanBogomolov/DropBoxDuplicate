@@ -93,6 +93,7 @@ namespace DropBoxDuplicate.Api.App_Start
              */
             kernel.Bind<IValidator<IdentityUser>>().To<IdentityUserValidator>();
             kernel.Bind<IValidator<ChangePasswordData>>().To<ChangePasswordDataValidator>();
+            kernel.Bind<IValidator<Comment>>().To<CommentValidator>();
         }        
     }
 }
