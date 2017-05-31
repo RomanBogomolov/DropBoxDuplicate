@@ -246,14 +246,14 @@ namespace DropBoxDuplicate.DataAccess.Sql
             }
         }
 
-        public IEnumerable<Files> GetShareFiles(Guid userId)
+        public IDictionary<Files, AccessType> GetShareFiles(Guid userId)
         {
             if (userId == Guid.Empty)
             {
                 throw new ArgumentNullException(nameof(userId), "Id не может быть empty.");
             }
 
-            var files = new List<Files>();
+            var files = new Dictionary<Files, AccessType>();
 
             using (var connection = new SqlConnection(_connectionString))
             {
@@ -268,15 +268,13 @@ namespace DropBoxDuplicate.DataAccess.Sql
 
                     command.Parameters.AddWithValue("@userid", userId);
 
-                    //Type = (AccessType)Enum.Parse(typeof(AccessType), reader.GetString(reader.GetOrdinal("accessAtribute")))
-
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
                         {
-                            files.Add(GetInfo(reader.GetGuid(reader.GetOrdinal("idFile"))));
+                            files.Add(GetInfo(reader.GetGuid(reader.GetOrdinal("idFile"))), 
+                                (AccessType)Enum.Parse(typeof(AccessType), reader.GetString(reader.GetOrdinal("accessAtribute"))));
                         }
-
                         return files;
                     }
                 }

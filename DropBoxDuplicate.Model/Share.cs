@@ -12,6 +12,10 @@ namespace DropBoxDuplicate.Model
         public Guid UserId { get; set; }
         public Guid FileId { get; set; }
 
+        public Share()
+        {
+        }
+
         public Share(Guid userId, Guid fileId)
         {
             UserId         = userId;

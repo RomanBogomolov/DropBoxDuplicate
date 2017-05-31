@@ -6,22 +6,46 @@ using DropBoxDuplicate.Api.Models;
 using DropBoxDuplicate.Api.Services;
 using DropBoxDuplicate.Model;
 using Microsoft.AspNet.Identity;
+using Swashbuckle.Swagger.Annotations;
 
 namespace DropBoxDuplicate.Api.Controllers
 {
     [RoutePrefix("api/account")]
     public class AccountController : BaseApiController
     {
-        //GET: /api/account/user/{id}
+        /// <summary>
+        /// Получить информацию о пользователе по Id.
+        /// </summary>
+        /// <remarks>
+        /// Информация о пользователе
+        ///  
+        ///     GET: /api/account/user/E6ECA3DC-5338-46D4-86D3-46AC9C60ACB9
+        /// 
+        /// </remarks>
+        /// <param name="id">Идентификатор пользователя</param>
+        /// <returns>Информация о пользователе.</returns>
+        [SwaggerResponse(200, "Вернется объект", typeof(IdentityUserReturnModel))]
         [Authorize]
         [Route("user/{id:guid}", Name = "GetUserById")]
         public async Task<IHttpActionResult> GetUser(Guid id)
         {
             var user = await AppUserManager.FindByIdAsync(id);
-            return user != null ? Ok(TheModelFactory.Create(user)) : GetErrorFromModel("id", "Не удается найти пользователя");
+            return user != null ? Ok(TheModelFactory.Create(user)) 
+                : GetErrorFromModel("id", "Не удается найти пользователя");
         }
 
-        //GET: /api/account/user/{username}
+        /// <summary>
+        /// Получить информацию о пользователе по username.
+        /// </summary>
+        /// <remarks>
+        /// Информация о пользователе
+        ///  
+        ///     GET: /api/account/user/{username}
+        /// 
+        /// </remarks>
+        /// <param name="username">Ник</param>
+        /// <returns>Информация о пользователе.</returns>
+        [SwaggerResponse(200, "Вернется объект", typeof(IdentityUserReturnModel))]
         [Authorize]
         [Route("user/{username}")]
         public async Task<IHttpActionResult> GetUserByName(string username)
@@ -29,8 +53,25 @@ namespace DropBoxDuplicate.Api.Controllers
             var user = await AppUserManager.FindByNameAsync(username);
             return user != null ? Ok(TheModelFactory.Create(user)) : GetErrorFromModel("username", "Не удается найти пользователя");
         }
-        
-        //POST: /api/account/create
+
+
+        /// <summary>
+        /// Регистрация пользователя.
+        /// </summary>
+        /// <remarks>
+        /// Запрос
+        ///  
+        ///     POST /api/account/create
+        ///     {
+        ///        "username":"testuser2",
+        ///        "passwordHash":"123456",
+        ///        "email":"test@gmail.com"
+        ///     }
+        /// 
+        /// </remarks>
+        /// <param name="user">Информация о пользователе</param>
+        /// <returns>Новый пользователь.</returns>
+        [SwaggerResponse(200, "Успешно добавлен", typeof(IdentityUser))]
         [AllowAnonymous]
         [Route("create")]
         public async Task<IHttpActionResult> CreateUser(IdentityUser user)
@@ -55,7 +96,18 @@ namespace DropBoxDuplicate.Api.Controllers
             return Created(locationHeader, TheModelFactory.Create(user));
         }
 
-        //GET: /api/account/ConfirmEmail?userId=&code=
+        /// <summary>
+        /// Подтверждение аккаунта пользователя.
+        /// </summary>
+        /// <remarks>
+        /// Запрос
+        ///  
+        ///     GET: /api/account/ConfirmEmail?userId=&amp;code=
+        /// 
+        /// </remarks>
+        /// <param name="userId">Идентификатор пользователя</param>
+        /// <param name="code">Код для подтверждения</param>
+        [SwaggerResponse(200, "Аккаунт подтвержден.")]
         [HttpGet]
         [AllowAnonymous]
         [Route("ConfirmEmail", Name = "ConfirmEmailRoute")]
@@ -77,11 +129,25 @@ namespace DropBoxDuplicate.Api.Controllers
             return result.Succeeded ? Ok("Ваш аккаунт подтвержден.") : GetErrorResult(result);
         }
 
-        //POST: /api/account/ChangePassword
-
+        /// <summary>
+        /// Изменение пароля пользователя.
+        /// </summary>
+        /// <remarks>
+        /// Запрос
+        /// 
+        ///     POST /api/account/ChangePassword
+        ///     {
+        ///        "OldPassword":"testuser2",
+        ///        "NewPassword":"123456",
+        ///        "ConfirmPassword":"test@gmail.com"
+        ///     }
+        /// 
+        /// </remarks>
+        /// <param name="data">Данные для смены пароля</param>
         [Authorize]
         [HttpPost]
         [Route("ChangePassword")]
+        [SwaggerResponse(200, "Пароль успешно изменен")]
         public async Task<IHttpActionResult> ChangePassword(ChangePasswordData data)
         {
             var result = await AppUserManager.ChangePasswordAsync(Guid.Parse(User.Identity.GetUserId()), data.OldPassword, data.NewPassword);
@@ -89,12 +155,18 @@ namespace DropBoxDuplicate.Api.Controllers
             return !result.Succeeded ? GetErrorResult(result) : Ok("Пароль успешно изменен.");
         }
 
-        //POST: /api/account/RecoveryPassword?email=xxxx
+
         /// <summary>
-        /// Генерация токена и нового пороля, которые будут высланы на почту
+        /// Генерация токена и нового пороля, которые будут высланы на почту.
         /// </summary>
-        /// <param name="email">eMail пользователя</param>
-        /// <returns></returns>
+        /// <remarks>
+        /// Запрос
+        /// 
+        ///     POST /api/account/RecoveryPassword?email=testuser@gmail.com
+        /// 
+        /// </remarks>
+        /// <param name="email">Email пользователя</param>
+        [SwaggerResponse(200, "Данные успешно высланы")]
         [AllowAnonymous]
         [HttpPost]
         [Route("RecoveryPassword")]
@@ -117,14 +189,19 @@ namespace DropBoxDuplicate.Api.Controllers
             return Ok("Инструкция по смене пароля выслана на почту");
         }
 
-        //GET: /api/account/ConfirmPasswordRecovery
         /// <summary>
         /// Подтверждение смены пароля
         /// </summary>
+        /// <remarks>
+        /// Запрос
+        /// 
+        ///     GET /api/account/ConfirmPasswordRecovery
+        /// 
+        /// </remarks>
         /// <param name="userId">Id пользователя</param>
         /// <param name="newPassword">Рандомно сгенерированный пароль</param>
         /// <param name="code">Token для изменения пароля</param>
-        /// <returns></returns>
+        [SwaggerResponse(200, "Пароль успешно изменен.")]
         [AllowAnonymous]
         [HttpGet]
         [Route("ConfirmPasswordRecovery", Name = "RecoveryPasswordRoute")]

@@ -25,7 +25,6 @@ namespace DropBoxDuplicate.Api
             ConfigureOAuthTokenConsumption(app);
 
             app.UseCors(Microsoft.Owin.Cors.CorsOptions.AllowAll);
-
             app.UseWebApi(httpConfig);
         }
 

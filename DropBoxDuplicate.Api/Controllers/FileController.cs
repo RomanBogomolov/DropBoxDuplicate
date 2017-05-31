@@ -1,11 +1,15 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Results;
+using DropBoxDuplicate.Api.Models;
 using DropBoxDuplicate.DataAccess;
 using DropBoxDuplicate.Model;
 using Microsoft.AspNet.Identity;
+using Swashbuckle.Swagger.Annotations;
 
 namespace DropBoxDuplicate.Api.Controllers
 {
@@ -14,6 +18,7 @@ namespace DropBoxDuplicate.Api.Controllers
     {
         private readonly IFileRepository _fileRepository;
         private readonly IUserStore<IdentityUser, Guid> _userRepository;
+        private readonly ModelFactory _modelFactory = new ModelFactory();
 
         public FileController(IFileRepository fileRepository, IUserStore<IdentityUser, Guid> userRepository)
         {
@@ -21,6 +26,22 @@ namespace DropBoxDuplicate.Api.Controllers
             _fileRepository = fileRepository;
         }
 
+        /// <summary>
+        /// Добавление файла в репозиторий.
+        /// </summary>
+        /// <remarks>
+        /// Запрос
+        ///  
+        ///     POST api/file/add
+        ///     {
+        ///        "filename":"testfile"
+        ///        "user":{"id":"E6ECA3DC-5338-46D4-86D3-46AC9C60ACB9"}
+        ///     }
+        /// 
+        /// </remarks>
+        /// <param name="file">Информация о файле</param>
+        /// <returns>Новую службу.</returns>
+        [SwaggerResponse(200, "Успешно добавлен", typeof(Files))]
         [Authorize]
         [HttpPost]
         [Route("add")]
@@ -30,14 +51,46 @@ namespace DropBoxDuplicate.Api.Controllers
             return Ok();
         }
 
+        /// <summary>
+        /// Получить информацию о файле.
+        /// </summary>
+        /// <remarks>
+        /// Информация о файле
+        ///  
+        ///     GET api/file/E31C6286-81F4-4325-9C0E-74287D197261
+        /// 
+        /// </remarks>
+        /// <param name="id">Идентификатор файла</param>
+        /// <returns>Информация о файле.</returns>
+        [SwaggerResponse(200, "Вернется объект", typeof(FileReturnModel))]
         [Authorize]
         [HttpGet]
         [Route("{id:guid}")]
         public IHttpActionResult GetFileInfo(Guid id)
         {
-            return Ok(_fileRepository.GetInfo(id));
+            var file = _fileRepository.GetInfo(id);
+
+            if (file != null)
+            {
+                return Ok(_modelFactory.Create(file));
+            }
+
+            return BadRequest("Не удалось загрузить информацию о файле.");
         }
 
+        /// <summary>
+        /// Удалить файл из репозитория.
+        /// </summary>
+        /// <remarks>
+        /// Удаление файла
+        ///  
+        ///     DELETE api/file/E31C6286-81F4-4325-9C0E-74287D197261
+        /// 
+        /// </remarks>
+        /// <param name="id">Идентификатор файла</param>
+        /// <response code="203">No content</response>
+        /// <response code="404">Неверный запрос</response>
+        [SwaggerResponse(203)]
         [Authorize]
         [HttpDelete]
         [Route("{id:guid}")]
@@ -47,6 +100,18 @@ namespace DropBoxDuplicate.Api.Controllers
             return new StatusCodeResult(HttpStatusCode.Accepted, this);
         }
 
+        /// <summary>
+        /// Сохранить файл на диск.
+        /// </summary>
+        /// <remarks>
+        /// Скачивание файла
+        ///  
+        ///     GET api/file/E31C6286-81F4-4325-9C0E-74287D197261/content
+        /// 
+        /// </remarks>
+        /// <param name="id">Идентификатор файла</param>
+        /// <response code="404">Неверный запрос</response>
+        [SwaggerResponse(200, "Файл")]
         [Authorize]
         [HttpGet]
         [Route("{id:guid}/content")]
@@ -55,6 +120,18 @@ namespace DropBoxDuplicate.Api.Controllers
             return Ok(_fileRepository.GetContent(id));
         }
 
+        /// <summary>
+        /// Обновить файл.
+        /// </summary>
+        /// <remarks>
+        /// Обновление
+        ///  
+        ///     PUT /api/file/E31C6286-81F4-4325-9C0E-74287D197261/update
+        /// 
+        /// </remarks>
+        /// <param name="id">Идентификатор файла</param>
+        /// <response code="404">Неверный запрос</response>
+        [SwaggerResponse(200, "Успешно обновлен.")]
         [Authorize]
         [HttpPut]
         [Route("{id:guid}/update")]
@@ -66,24 +143,83 @@ namespace DropBoxDuplicate.Api.Controllers
             return Ok();
         }
 
+        /// <summary>
+        /// Получить список файлов в репозитории пользователя
+        /// </summary>
+        /// <remarks>
+        /// Запрос
+        ///  
+        ///     GET api/file/user/E6ECA3DC-5338-46D4-86D3-46AC9C60ACB9
+        /// 
+        /// </remarks>
+        /// <param name="id">Идентификатор файла</param>
+        /// <response code="404">Неверный запрос</response>
+        [SwaggerResponse(200, "Вернется объект", typeof(UserFilesReturnModel))]
         [Authorize]
         [HttpGet]
         [Route("user/{id:guid}")]
-        public IHttpActionResult GetUserFiles(Guid id)
+        public IHttpActionResult GetFiles(Guid id)
         {
             var userFiles = _fileRepository.GetUsersFiles(id);
-            return Ok(userFiles);
+
+            if (userFiles != null)
+            {
+                var returnModel = new List<UserFilesReturnModel>();
+                foreach (var file in userFiles)
+                {
+                    returnModel.Add(_modelFactory.CreateUserFiles(file));
+                }
+                return Ok(returnModel);
+            }
+
+            return BadRequest("Не удалось загрузить файлы.");
         }
 
+
+        /// <summary>
+        /// Получить список расшаренных файлов для пользователя
+        /// </summary>
+        /// <remarks>
+        /// Запрос
+        ///  
+        ///     GET api/file/user/E6ECA3DC-5338-46D4-86D3-46AC9C60ACB9
+        /// 
+        /// </remarks>
+        /// <param name="id">Идентификатор файла</param>
+        /// <response code="404">Неверный запрос</response>
+        [SwaggerResponse(200, "Вернется объект", typeof(UserFilesReturnModel))]
         [Authorize]
         [HttpGet]
         [Route("user/{id:guid}/share")]
         public IHttpActionResult GetShareFiles(Guid id)
         {
-            var userFiles = _fileRepository.GetShareFiles(id);
-            return Ok(userFiles);
+            var shareFiles = _fileRepository.GetShareFiles(id);
+
+            if (shareFiles != null)
+            {
+                var returnValue = shareFiles.Select(file => _modelFactory.CreateShareFiles(file.Key, file.Value)).ToList();
+                return Ok(returnValue);
+            }
+
+            return BadRequest("Не удалось найти расшаренные файлы.");
         }
 
+        /// <summary>
+        /// Расшарить файл для пользователей
+        /// </summary>
+        /// <remarks>
+        /// Запрос
+        ///  
+        ///     POST api/file/BC345A1F-E173-47A7-9EE6-23B7BD7F71A9/share
+        ///     {
+        ///        ["E6ECA3DC-5338-46D4-86D3-46AC9C60ACB9","60809d21-bb77-4f0b-80a8-cc03826f6c91"]        
+        ///     }
+        /// 
+        /// </remarks>
+        /// <param name="id">Идентификатор файла</param>
+        /// <param name="userId">Идентификаторы пользователей</param>
+        /// <response code="404">Неверный запрос</response>
+        [SwaggerResponse(200)]
         [Authorize]
         [HttpPost]
         [Route("{id:guid}/share/")]
@@ -108,6 +244,22 @@ namespace DropBoxDuplicate.Api.Controllers
             return Ok();
         }
 
+        /// <summary>
+        /// Удалить пользователей из шары
+        /// </summary>
+        /// <remarks>
+        /// Запрос
+        ///  
+        ///     DELETE api/file/BC345A1F-E173-47A7-9EE6-23B7BD7F71A9/share
+        ///     {
+        ///        ["E6ECA3DC-5338-46D4-86D3-46AC9C60ACB9","60809d21-bb77-4f0b-80a8-cc03826f6c91"]      
+        ///     }
+        /// 
+        /// </remarks>
+        /// <param name="id">Идентификатор файла</param>
+        /// <param name="userId">Идентификаторы пользователей</param>
+        /// <response code="404">Неверный запрос</response>
+        [SwaggerResponse(203)]
         [Authorize]
         [HttpDelete]
         [Route("{id:guid}/share/")]
@@ -133,6 +285,23 @@ namespace DropBoxDuplicate.Api.Controllers
             return new StatusCodeResult(HttpStatusCode.Accepted, this);
         }
 
+        /// <summary>
+        /// Обновить уровень доступа к файлу
+        /// </summary>
+        /// <remarks>
+        /// Запрос
+        ///  
+        ///     PUT api/file/BC345A1F-E173-47A7-9EE6-23B7BD7F71A9/share/
+        ///     {
+        ///         "accessAtribute":"2",
+        ///         "userId":"E6ECA3DC-5338-46D4-86D3-46AC9C60ACB9"
+        ///     }
+        /// 
+        /// </remarks>
+        /// <param name="id">Идентификатор файла</param>
+        /// <param name="share">Информация о шаре</param>
+        /// <response code="404">Неверный запрос</response>
+        [SwaggerResponse(200, "Уровень доступа успешно обновлен.")]
         //[Authorize]
         [HttpPut]
         [Route("{id:guid}/share/")]

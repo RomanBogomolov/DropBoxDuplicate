@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Web.Http.ModelBinding;
 
-namespace DropBoxDuplicate.Api.Infrastructure
+namespace DropBoxDuplicate.Api.Filters
 {
     public class ApiResourceValidationErrorWrapper
     {

@@ -52,13 +52,13 @@ namespace DropBoxDuplicate.DataAccess
         /// </summary>
         /// <param name="id">Id файла</param>
         void Delete(Guid id);
-        
+
         /// <summary>
         /// Список расшаренных файлов для пользователя
         /// </summary>
         /// <param name="userId"></param>
         /// <returns></returns>
-        IEnumerable<Files> GetShareFiles(Guid userId);
+        IDictionary<Files, AccessType> GetShareFiles(Guid userId);
         
         /// <summary>
         /// Расшарить файл для пользователей

@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Text;
 using System.Web;
 using System.Web.Http;
+using DropBoxDuplicate.Api.Filters;
 using DropBoxDuplicate.Api.Infrastructure;
 using DropBoxDuplicate.Api.Models;
 using Microsoft.AspNet.Identity;

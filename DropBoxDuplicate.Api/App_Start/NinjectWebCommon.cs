@@ -1,7 +1,10 @@
 using DropBoxDuplicate.DataAccess;
 using DropBoxDuplicate.DataAccess.Sql;
 using System.Configuration;
+using DropBoxDuplicate.Api.Models;
+using DropBoxDuplicate.Api.Models.Validators;
 using DropBoxDuplicate.Model;
+using DropBoxDuplicate.Model.Validators;
 using Microsoft.AspNet.Identity;
 
 [assembly: WebActivatorEx.PreApplicationStartMethod(typeof(DropBoxDuplicate.Api.App_Start.NinjectWebCommon), "Start")]
@@ -11,11 +14,17 @@ namespace DropBoxDuplicate.Api.App_Start
 {
     using System;
     using System.Web;
+    using System.Web.Http;
 
     using Microsoft.Web.Infrastructure.DynamicModuleHelper;
 
     using Ninject;
     using Ninject.Web.Common;
+
+    using FluentValidation;
+    using FluentValidation.WebApi;
+
+    using DropBoxDuplicate.Api.Services;
 
     public static class NinjectWebCommon 
     {
@@ -51,6 +60,10 @@ namespace DropBoxDuplicate.Api.App_Start
                 kernel.Bind<Func<IKernel>>().ToMethod(ctx => () => new Bootstrapper().Kernel);
                 kernel.Bind<IHttpModule>().To<HttpApplicationInitializationHttpModule>();
 
+                FluentValidationModelValidatorProvider.
+                    Configure(GlobalConfiguration.Configuration, provider => provider.ValidatorFactory =
+                        new NinjectValidatorFactory(kernel));
+
                 RegisterServices(kernel);
                 return kernel;
             }
@@ -68,11 +81,18 @@ namespace DropBoxDuplicate.Api.App_Start
         private static void RegisterServices(IKernel kernel)
         {
             var connectionString = ConfigurationManager.ConnectionStrings["DBD"].ConnectionString;
-
+            /*
+             * DAL
+             */
             kernel.Bind<IFileRepository>().To<FileRepository>().WithConstructorArgument(connectionString);
             kernel.Bind<IUserStore<IdentityUser, Guid>>()
                 .To<IdentityUserRepository>()
                 .WithConstructorArgument(connectionString);
+            /*
+             * Validators
+             */
+            kernel.Bind<IValidator<IdentityUser>>().To<IdentityUserValidator>();
+            kernel.Bind<IValidator<ChangePasswordData>>().To<ChangePasswordDataValidator>();
         }        
     }
 }
