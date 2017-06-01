@@ -7,6 +7,7 @@ using DropBoxDuplicate.Model;
 using Microsoft.AspNet.Identity;
 using Dapper;
 using DropBoxDuplicate.DataAccess.Sql.Hashing.BCryptHashing;
+using DropBoxDuplicate.Log;
 
 
 namespace DropBoxDuplicate.DataAccess.Sql
@@ -24,159 +25,213 @@ namespace DropBoxDuplicate.DataAccess.Sql
             _connectionString = connectionString;
         }
 
-        public void Dispose()
-        {
-            //throw new NotImplementedException();
-        }
+        public void Dispose(){ }
 
         #region IUserStore<IdentityUser, Guid>
 
         public Task CreateAsync(IdentityUser user)
         {
-            if (user == null)
+            using (LogWrapper logger = new LogWrapper())
             {
-                throw new ArgumentNullException(nameof(user), "Пользователь не может быть null.");
-            }
-
-            return Task.Factory.StartNew(() =>
-            {
-                using (var connection = new SqlConnection(_connectionString))
+                if (user == null)
                 {
-                    connection.Open();
-
-                    user.Id = Guid.NewGuid();
-                    user.RegDate = DateTimeOffset.Now;
-                    user.PasswordHash = PasswordHashing.HashPassword(user.PasswordHash);
-
-                    connection.Execute("upCreate_new_user",
-                        new
-                        {
-                            user.Id,
-                            user.UserName,
-                            user.PasswordHash,
-                            user.Email,
-                            user.EmailConfirmed,
-                            user.FirstName,
-                            user.SecondName,
-                            user.RegDate,
-                            user.City,
-                            user.BirthDate,
-                            user.SecurityStamp
-                        },
-                        commandType: CommandType.StoredProcedure);
+                    logger.Error("Пользователь не может быть null.");
+                    throw new ArgumentNullException(nameof(user), "Пользователь не может быть null.");
                 }
-            });
+                try
+                {
+                    return Task.Factory.StartNew(() =>
+                    {
+                        using (var connection = new SqlConnection(_connectionString))
+                        {
+                            connection.Open();
+
+                            user.Id = Guid.NewGuid();
+                            user.RegDate = DateTimeOffset.Now;
+                            user.PasswordHash = PasswordHashing.HashPassword(user.PasswordHash);
+
+                            connection.Execute("upCreate_new_user",
+                                new
+                                {
+                                    user.Id,
+                                    user.UserName,
+                                    user.PasswordHash,
+                                    user.Email,
+                                    user.EmailConfirmed,
+                                    user.FirstName,
+                                    user.SecondName,
+                                    user.RegDate,
+                                    user.City,
+                                    user.BirthDate,
+                                    user.SecurityStamp
+                                },
+                                commandType: CommandType.StoredProcedure);
+                        }
+                    });
+                }
+                catch (Exception e)
+                {
+                    logger.Error(e.Message);
+                    return null;
+                }
+            }
         }
 
         public Task DeleteAsync(IdentityUser user)
         {
-            if (user == null)
+            using (LogWrapper logger = new LogWrapper())
             {
-                throw new ArgumentNullException(nameof(user), "Пользователь не может быть null.");
-            }
-
-            return Task.Factory.StartNew(() =>
-            {
-                using (var connection = new SqlConnection(_connectionString))
+                if (user == null)
                 {
-                    connection.Open();
-                    connection.Execute("upDelete_user", new {user.Id}, commandType: CommandType.StoredProcedure);
+                    logger.Error("Пользователь не может быть null.");
+                    throw new ArgumentNullException(nameof(user), "Пользователь не может быть null.");
                 }
-            });
+                try
+                {
+                    return Task.Factory.StartNew(() =>
+                    {
+                        using (var connection = new SqlConnection(_connectionString))
+                        {
+                            connection.Open();
+                            connection.Execute("upDelete_user", new {user.Id},
+                                commandType: CommandType.StoredProcedure);
+                        }
+                    });
+                }
+
+                catch (Exception e)
+                {
+                    logger.Error(e.Message);
+                    return null;
+                }
+            }
         }
 
         public Task<IdentityUser> FindByIdAsync(Guid userId)
         {
-            if (userId == Guid.Empty)
+            using (LogWrapper logger = new LogWrapper())
             {
-                throw new ArgumentNullException(nameof(userId), "userId не может быть null.");
-            }
-
-            return Task.Factory.StartNew(() =>
-            {
-                using (var connection = new SqlConnection(_connectionString))
+                if (userId == Guid.Empty)
                 {
-                    connection.Open();
-                    return
-                        connection.Query<IdentityUser>(
-                                "SELECT " +
-                                "Id, " +
-                                "UserName, " +
-                                "PasswordHash, " +
-                                "Email, " +
-                                "EmailConfirmed, " +
-                                "FirstName, " +
-                                "SecondName, " +
-                                "RegDate, " +
-                                "City, " +
-                                "BirthDate, " +
-                                "SecurityStamp FROM ufSelect_user_by_id(@userId)", new {userId})
-                            .SingleOrDefault();
+                    logger.Error("userId не может быть null.");
+                    throw new ArgumentNullException(nameof(userId), "userId не может быть null.");
                 }
-            });
+                try
+                {
+                    return Task.Factory.StartNew(() =>
+                    {
+                        using (var connection = new SqlConnection(_connectionString))
+                        {
+                            connection.Open();
+                            return
+                                connection.Query<IdentityUser>(
+                                        "SELECT " +
+                                        "Id, " +
+                                        "UserName, " +
+                                        "PasswordHash, " +
+                                        "Email, " +
+                                        "EmailConfirmed, " +
+                                        "FirstName, " +
+                                        "SecondName, " +
+                                        "RegDate, " +
+                                        "City, " +
+                                        "BirthDate, " +
+                                        "SecurityStamp FROM ufSelect_user_by_id(@userId)", new {userId})
+                                    .SingleOrDefault();
+                        }
+                    });
+                }
+                catch (Exception e)
+                {
+                    logger.Error(e.Message);
+                    return null;
+                }
+            }
         }
 
         public Task<IdentityUser> FindByNameAsync(string userName)
         {
-            if (string.IsNullOrEmpty(userName))
+            using (LogWrapper logger = new LogWrapper())
             {
-                throw new ArgumentNullException(nameof(userName), "Имя пользоватиеля не может быть null.");
-            }
-
-            return Task.Factory.StartNew(() =>
-            {
-                using (var connection = new SqlConnection(_connectionString))
+                if (string.IsNullOrEmpty(userName))
                 {
-                    connection.Open();
-
-                    return
-                        connection.Query<IdentityUser>(
-                                "SELECT " +
-                                "Id, " +
-                                "UserName, " +
-                                "PasswordHash, " +
-                                "Email, " +
-                                "EmailConfirmed, " +
-                                "FirstName, " +
-                                "SecondName, " +
-                                "RegDate, " +
-                                "City, " +
-                                "BirthDate, " +
-                                "SecurityStamp FROM ufSelect_user_by_username(@userName)", new {userName})
-                            .SingleOrDefault();
+                    logger.Error("Имя пользоватиеля не может быть null.");
+                    throw new ArgumentNullException(nameof(userName), "Имя пользоватиеля не может быть null.");
                 }
-            });
+                try
+                {
+                    return Task.Factory.StartNew(() =>
+                    {
+                        using (var connection = new SqlConnection(_connectionString))
+                        {
+                            connection.Open();
+
+                            return
+                                connection.Query<IdentityUser>(
+                                        "SELECT " +
+                                        "Id, " +
+                                        "UserName, " +
+                                        "PasswordHash, " +
+                                        "Email, " +
+                                        "EmailConfirmed, " +
+                                        "FirstName, " +
+                                        "SecondName, " +
+                                        "RegDate, " +
+                                        "City, " +
+                                        "BirthDate, " +
+                                        "SecurityStamp FROM ufSelect_user_by_username(@userName)", new {userName})
+                                    .SingleOrDefault();
+                        }
+                    });
+                }
+                catch (Exception e)
+                {
+                    logger.Error(e.Message);
+                    return null;
+                }
+            }
         }
 
         public Task UpdateAsync(IdentityUser user)
         {
-            if (user == null)
+            using (LogWrapper logger = new LogWrapper())
             {
-                throw new ArgumentNullException(nameof(user), "Пользователь не может быть null.");
-            }
-
-            return Task.Factory.StartNew(() =>
-            {
-                using (var connection = new SqlConnection(_connectionString))
+                if (user == null)
                 {
-                    connection.Open();
-
-                    connection.Execute("upUpdate_user", new
-                    {
-                        user.Id,
-                        user.UserName,
-                        user.PasswordHash,
-                        user.Email,
-                        user.EmailConfirmed,
-                        user.FirstName,
-                        user.SecondName,
-                        user.RegDate,
-                        user.City,
-                        user.BirthDate,
-                        user.SecurityStamp
-                    }, commandType: CommandType.StoredProcedure);
+                    logger.Error("Пользователь не может быть null.");
+                    throw new ArgumentNullException(nameof(user), "Пользователь не может быть null.");
                 }
-            });
+                try
+                {
+                    return Task.Factory.StartNew(() =>
+                    {
+                        using (var connection = new SqlConnection(_connectionString))
+                        {
+                            connection.Open();
+
+                            connection.Execute("upUpdate_user", new
+                            {
+                                user.Id,
+                                user.UserName,
+                                user.PasswordHash,
+                                user.Email,
+                                user.EmailConfirmed,
+                                user.FirstName,
+                                user.SecondName,
+                                user.RegDate,
+                                user.City,
+                                user.BirthDate,
+                                user.SecurityStamp
+                            }, commandType: CommandType.StoredProcedure);
+                        }
+                    });
+                }
+                catch (Exception e)
+                {
+                    logger.Error(e.Message);
+                    throw;
+                }
+            }
         }
 
         #endregion
@@ -303,33 +358,44 @@ namespace DropBoxDuplicate.DataAccess.Sql
 
         public Task<IdentityUser> FindByEmailAsync(string email)
         {
-            if (string.IsNullOrEmpty(email))
+            using (LogWrapper logger = new LogWrapper())
             {
-                throw new ArgumentNullException(nameof(email), "Email не может быть null.");
-            }
-
-            return Task.Factory.StartNew(() =>
-            {
-                using (var connection = new SqlConnection(_connectionString))
+                if (string.IsNullOrEmpty(email))
                 {
-                    connection.Open();
-                    return
-                        connection.Query<IdentityUser>(
-                                "SELECT " +
-                                "Id, " +
-                                "UserName, " +
-                                "PasswordHash, " +
-                                "Email, " +
-                                "EmailConfirmed, " +
-                                "FirstName, " +
-                                "SecondName, " +
-                                "RegDate, " +
-                                "City, " +
-                                "BirthDate, " +
-                                "SecurityStamp FROM ufSelect_user_by_email(@email)", new {email})
-                            .SingleOrDefault();
+                    logger.Error("Email не может быть null.");
+                    throw new ArgumentNullException(nameof(email), "Email не может быть null.");
                 }
-            });
+                try
+                {
+                    return Task.Factory.StartNew(() =>
+                    {
+                        using (var connection = new SqlConnection(_connectionString))
+                        {
+                            connection.Open();
+                            return
+                                connection.Query<IdentityUser>(
+                                        "SELECT " +
+                                        "Id, " +
+                                        "UserName, " +
+                                        "PasswordHash, " +
+                                        "Email, " +
+                                        "EmailConfirmed, " +
+                                        "FirstName, " +
+                                        "SecondName, " +
+                                        "RegDate, " +
+                                        "City, " +
+                                        "BirthDate, " +
+                                        "SecurityStamp FROM ufSelect_user_by_email(@email)", new {email})
+                                    .SingleOrDefault();
+                        }
+                    });
+                }
+                catch (Exception e)
+                {
+                    logger.Error(e.Message);
+                    return null;
+                }
+            }
         }
 
         #endregion

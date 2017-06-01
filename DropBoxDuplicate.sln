@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DropBoxDuplicate.Model", "D
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DropBoxDuplicate.DataAccess.Sql.Tests", "DropBoxDuplicate.DataAccess.Sql.Tests\DropBoxDuplicate.DataAccess.Sql.Tests.csproj", "{404CED92-B40F-4113-9BDC-24F06E2E5ED4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DropBoxDuplicate.Log", "DropBoxDuplicate.Log\DropBoxDuplicate.Log.csproj", "{6A399D17-9EF4-480A-A315-7273CC521CAD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{404CED92-B40F-4113-9BDC-24F06E2E5ED4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{404CED92-B40F-4113-9BDC-24F06E2E5ED4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{404CED92-B40F-4113-9BDC-24F06E2E5ED4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6A399D17-9EF4-480A-A315-7273CC521CAD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6A399D17-9EF4-480A-A315-7273CC521CAD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6A399D17-9EF4-480A-A315-7273CC521CAD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6A399D17-9EF4-480A-A315-7273CC521CAD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

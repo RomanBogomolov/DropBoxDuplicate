@@ -10,6 +10,7 @@ using DropBoxDuplicate.DataAccess;
 using DropBoxDuplicate.Model;
 using Microsoft.AspNet.Identity;
 using Swashbuckle.Swagger.Annotations;
+using Logger = DropBoxDuplicate.Log.Logger;
 
 namespace DropBoxDuplicate.Api.Controllers
 {
@@ -48,6 +49,7 @@ namespace DropBoxDuplicate.Api.Controllers
         public IHttpActionResult AddFile(Files file)
         {
             _fileRepository.Add(file);
+            Logger.ServiceLog.Info($"Файл {file.Id} успешно добавлен");
             return Ok();
         }
 
@@ -97,6 +99,7 @@ namespace DropBoxDuplicate.Api.Controllers
         public IHttpActionResult DeleteFile(Guid id)
         {
             _fileRepository.Delete(id);
+            Logger.ServiceLog.Info($"Файл {id} успешно удален");
             return new StatusCodeResult(HttpStatusCode.Accepted, this);
         }
 
@@ -139,6 +142,7 @@ namespace DropBoxDuplicate.Api.Controllers
         {
             var bytes = await Request.Content.ReadAsByteArrayAsync();
             _fileRepository.UpdateContent(id, bytes);
+            Logger.ServiceLog.Info($"Файл успешно {id} обновлен");
 
             return Ok();
         }
@@ -230,17 +234,20 @@ namespace DropBoxDuplicate.Api.Controllers
                 if (_userRepository.FindByIdAsync(idUser) == null)
                 {
                     ModelState.AddModelError("user", $"Пользователь c {idUser} не зарегистрирован.");
+                    Logger.ServiceLog.Warn($"Для пользователь {idUser} файл {id} не расшарен.");
                     return BadRequest(ModelState);
                 }
 
                 if (_fileRepository.IsFileShare(idUser, id))
                 {
                     ModelState.AddModelError("user", $"Для пользователя c {idUser} файл уже расшарен.");
+                    Logger.ServiceLog.Warn($"Для пользователя c {idUser} файл уже расшарен.");
                     return BadRequest(ModelState);
                 }
             }
 
             _fileRepository.AddfileToShareForUser(id, userId);
+            Logger.ServiceLog.Info($"Файл {id} успешно добавлен в шару для {userId}");
             return Ok();
         }
 
@@ -270,18 +277,20 @@ namespace DropBoxDuplicate.Api.Controllers
                 if (await _userRepository.FindByIdAsync(idUser) == null)
                 {
                     ModelState.AddModelError("user", $"Пользователь c {idUser} не зарегистрирован.");
+                    Logger.ServiceLog.Warn($"Для пользователя c {idUser} файл не удален из шары.");
                     return BadRequest(ModelState);
                 }
 
                 if (!_fileRepository.IsFileShare(idUser, id))
                 {
                     ModelState.AddModelError("user", $"Для пользователя c {idUser} файл {id} не расшарен.");
+                    Logger.ServiceLog.Warn($"Для пользователя c {idUser} файл {id} не расшарен.");
                     return BadRequest(ModelState);
                 }
             }
 
             _fileRepository.DeleteUserFromShare(id, userId);
-
+            Logger.ServiceLog.Info($"Файл {id} успешно удален из шары {userId}");
             return new StatusCodeResult(HttpStatusCode.Accepted, this);
         }
 
@@ -312,6 +321,7 @@ namespace DropBoxDuplicate.Api.Controllers
             if (user == null)
             {
                 ModelState.AddModelError("user", $"Пользователь c {share.UserId} не зарегистрирован.");
+                Logger.ServiceLog.Warn($"Пользователь c {share.UserId} не зарегистрирован.");
                 return BadRequest(ModelState);
             }
 
@@ -320,11 +330,13 @@ namespace DropBoxDuplicate.Api.Controllers
             if (shareFile)
             {
                 share.FileId = id;
-                 _fileRepository.UpdateAccessToFile(share);
+                _fileRepository.UpdateAccessToFile(share);
+                Logger.ServiceLog.Info($"Уровень доступа к файлу {id} успешно обновлен для пользователя {share.UserId}");
                 return Ok();
             }
 
             ModelState.AddModelError("user", $"Для пользователя c {share.UserId} файл {id} не расшарен.");
+            Logger.ServiceLog.Warn($"Для пользователя c {share.UserId} файл {id} не расшарен.");
             return BadRequest(ModelState);
         }
 
@@ -355,10 +367,12 @@ namespace DropBoxDuplicate.Api.Controllers
             if (checkShareFile)
             {
                 _fileRepository.AddCommentToFile(fileId, userId, comment);
+                Logger.ServiceLog.Info($"Комментарий для файла {fileId} пользователем {userId} успешно добавлен");
                 return Ok();
             }
 
             ModelState.AddModelError("file", $"Файл {fileId} для пользоваеля {userId} не расшарен.");
+            Logger.ServiceLog.Warn($"Файл {fileId} для пользоваеля {userId} не расшарен.");
             return BadRequest(ModelState);
         }
 
@@ -418,6 +432,7 @@ namespace DropBoxDuplicate.Api.Controllers
         public IHttpActionResult DeleteCommentFromFile(Guid fileId, Guid userId, Comment comment)
         {
             _fileRepository.DeleteComment(fileId, userId, comment);
+            Logger.ServiceLog.Info($"Комментарий для файла {fileId} успешно удален пользователем {userId}");
             return new StatusCodeResult(HttpStatusCode.Accepted, this);
         }
     }

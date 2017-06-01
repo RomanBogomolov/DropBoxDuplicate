@@ -67,6 +67,10 @@
       <Project>{c639beb7-65db-49aa-9925-86e6b30d5783}</Project>
       <Name>DropBoxDuplicate.DataAccess</Name>
     </ProjectReference>
+    <ProjectReference Include="..\DropBoxDuplicate.Log\DropBoxDuplicate.Log.csproj">
+      <Project>{6a399d17-9ef4-480a-a315-7273cc521cad}</Project>
+      <Name>DropBoxDuplicate.Log</Name>
+    </ProjectReference>
     <ProjectReference Include="..\DropBoxDuplicate.Model\DropBoxDuplicate.Model.csproj">
       <Project>{cd65bf34-0c67-47cf-b97c-a70014867b0f}</Project>
       <Name>DropBoxDuplicate.Model</Name>

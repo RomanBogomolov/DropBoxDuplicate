@@ -4,6 +4,7 @@ using System.Web;
 using System.Web.Http;
 using DropBoxDuplicate.Api.Models;
 using DropBoxDuplicate.Api.Services;
+using DropBoxDuplicate.Log;
 using DropBoxDuplicate.Model;
 using Microsoft.AspNet.Identity;
 using Swashbuckle.Swagger.Annotations;
@@ -80,6 +81,7 @@ namespace DropBoxDuplicate.Api.Controllers
 
             if (!addUser.Succeeded)
             {
+                Logger.ServiceLog.Warn("Ошибка регистрации пользователя");
                 return GetErrorResult(addUser);
             }
 
@@ -87,12 +89,13 @@ namespace DropBoxDuplicate.Api.Controllers
             code = HttpUtility.UrlEncode(code);
 
             var callbackUrl = new Uri(Url.Link("ConfirmEmailRoute", new { userId = user.Id, code }));
-            /**/
+
             await AppUserManager.SendEmailAsync(user.Id, "Подтверждение аккаунта в DropBoxDuplicate",
                 "<strong>Подтвердите ваш аккаунт</strong>: <a href=\"" + callbackUrl + "\">Ссылка</a>");
 
             var locationHeader = new Uri(Url.Link("GetUserById", new { id = user.Id }));
 
+            Logger.ServiceLog.Info($"Пользователь {user.Id} успешно зарегистрирован.");
             return Created(locationHeader, TheModelFactory.Create(user));
         }
 
@@ -115,18 +118,27 @@ namespace DropBoxDuplicate.Api.Controllers
         {
             if (string.IsNullOrWhiteSpace(code))
             {
+                Logger.ServiceLog.Warn($"Пользователь {userId} не указал код.");
                 return GetErrorFromModel("code", "Требуется код.");
             }
             var user = await AppUserManager.FindByIdAsync(userId);
             if (user == null)
             {
+                Logger.ServiceLog.Warn($"Пользователь с {userId} не зарегистрирован в БД");
                 return GetErrorFromModel("userId", "Такого пользователя не существует.");
             }
             code = HttpUtility.UrlDecode(code);
 
-            IdentityResult result = await AppUserManager.ConfirmEmailAsync(userId, code);
+            var result = await AppUserManager.ConfirmEmailAsync(userId, code);
 
-            return result.Succeeded ? Ok("Ваш аккаунт подтвержден.") : GetErrorResult(result);
+            if (result.Succeeded)
+            {
+                Logger.ServiceLog.Info($"Пользователь {user.Id} успешно подтвердил аккаунт.");
+                return Ok();
+            }
+
+            Logger.ServiceLog.Warn($"Пользователь с {userId} не подтвердил аккаунт");
+            return GetErrorResult(result);
         }
 
         /// <summary>
@@ -152,7 +164,14 @@ namespace DropBoxDuplicate.Api.Controllers
         {
             var result = await AppUserManager.ChangePasswordAsync(Guid.Parse(User.Identity.GetUserId()), data.OldPassword, data.NewPassword);
 
-            return !result.Succeeded ? GetErrorResult(result) : Ok("Пароль успешно изменен.");
+            if (result.Succeeded)
+            {
+                Logger.ServiceLog.Info("Пользователь успешно изменил пароль к аккаунту.");
+                return Ok();
+            }
+
+            Logger.ServiceLog.Warn("Пользователь не сменил пароль.");
+            return GetErrorResult(result);
         }
 
 
@@ -176,6 +195,7 @@ namespace DropBoxDuplicate.Api.Controllers
 
             if (user == null)
             {
+                Logger.ServiceLog.Warn($"Пользователь с email {email} не зарегистрирован.");
                 return GetErrorFromModel("email", $"Пользователь с email {email} не зарегистрирован.");
             }
             var recoveryToken = AppUserManager.GeneratePasswordResetTokenAsync(user.Id);
@@ -186,6 +206,7 @@ namespace DropBoxDuplicate.Api.Controllers
             await AppUserManager.SendEmailAsync(user.Id, "Восстановление пароля",
                 "Ваш новый пароль: <strong>" + password + "</strong> <br> Для его подтверждения перейдите по ссылке <a href=\"" + callBackUri + "\">ССылка</a>");
 
+            Logger.ServiceLog.Info($"Пользователю на email {email} успешно выслана инструкция по восстановдению пароля.");
             return Ok("Инструкция по смене пароля выслана на почту");
         }
 
@@ -209,17 +230,26 @@ namespace DropBoxDuplicate.Api.Controllers
         {
             if (string.IsNullOrWhiteSpace(code))
             {
+                Logger.ServiceLog.Warn($"Пользователь {userId} не указал код.");
                 return GetErrorFromModel("code", "Требуется код.");
             }
             var user = AppUserManager.FindByIdAsync(userId);
             if (user == null)
             {
+                Logger.ServiceLog.Warn($"Пользователь с id {userId} не зарегистрирован.");
                 GetErrorFromModel("userId", $"Пользователь с id {userId} не зарегистрирован.");
             }
             code = HttpUtility.UrlDecode(code);
             var result = AppUserManager.ResetPassword(userId, code, newPassword);
 
-            return result.Succeeded ? Ok("Вы успешно сменили пароль.") : GetErrorResult(result);
+            if (result.Succeeded)
+            {
+                Logger.ServiceLog.Info($"Пользователю {userId} успешно изменил пароль.");
+                return Ok();
+            }
+
+            Logger.ServiceLog.Warn($"Пользователь с id {userId} не смог изменить пароль.");
+            return GetErrorResult(result);
         }
     }
 }
